@@ -19,18 +19,26 @@ def get_parking_lot_size(n_cars):
     counter += 1
 
 
-def get_parent_collection_names(collection, parent_names):
+def get_parent_collections_name(collection, parent_names):
   for parent_collection in bpy.data.collections:
     if collection.name in parent_collection.children.keys():
       parent_names.append(parent_collection.name)
-      get_parent_collection_names(parent_collection, parent_names)
+      get_parent_collections_name(parent_collection, parent_names)
       return
+
+
+def get_parent_collection(collection):
+  if collection.name in bpy.context.scene.collection.children:
+    return bpy.context.scene.collection
+  for col in bpy.data.collections:
+    if collection.name in col.children:
+      return col
 
 
 def get_collection_path_absolute(bpy_collection):
   parent_names = []
   parent_names.append(bpy_collection.name)
-  get_parent_collection_names(bpy_collection, parent_names)
+  get_parent_collections_name(bpy_collection, parent_names)
   parent_names.reverse()
   return '/'.join(parent_names)
 
@@ -131,7 +139,7 @@ class AddTagToObjects(bpy.types.Operator):
 class AddTagToCollections(bpy.types.Operator):
   """Adds the tag to the selected Collections."""
   bl_idname = "scene.add_tag_to_collections"
-  bl_label = "Adds the given tag to all "
+  bl_label = "Adds the given tag to all"
   bl_options = {'REGISTER', 'UNDO'}
 
   tag: bpy.props.StringProperty()
@@ -160,7 +168,7 @@ class AddTagToCollections(bpy.types.Operator):
 
 class ParkObjects(bpy.types.Operator):
   bl_idname = "scene.park_objects"
-  bl_label = "Adds the given tag to all "
+  bl_label = "Aligns the objects to a grid."
   bl_options = {'REGISTER', 'UNDO'}
 
   @classmethod
@@ -186,12 +194,14 @@ class ParkObjects(bpy.types.Operator):
     return {'FINISHED'}
 
 
-class MoveCollectionsOfSelectedObjectsToCollection(bpy.types.Operator):
-  bl_idname = "scene.move_collections_of_selected_objects_to_collection"
-  bl_label = "Moves all collections that contain the selected objects to the specified collection."
+class MoveObjectsCollection(bpy.types.Operator):
+  bl_idname = "scene.move_objects_collection"
+  bl_description = "Moves all collections that contain the selected objects to the specified collection."
+  bl_label = "Move Objects' Collection"
   bl_options = {"REGISTER", "UNDO"}
 
-  to_collection: bpy.props.PointerProperty(bpy.types.Collection)
+  # Not working because of AttributeError: 'MoveObjectsCollection' object has no attribute 'to_collection'
+  # to_collection: bpy.props.PointerProperty(type=bpy.types.Collection)
 
   @classmethod
   def poll(cls, context):
@@ -201,11 +211,10 @@ class MoveCollectionsOfSelectedObjectsToCollection(bpy.types.Operator):
     for obj in context.selected_objects:
       col = obj.users_collection[0]
       print(col)
-      if col.name in self.to_collection.children:
+      if col.name in bpy.context.collection.children:
         continue
-      for col in obj.users_collection:
-        col.children.unlink(col)
-      self.to_collection.children.link(col)
+      get_parent_collection(col).children.unlink(col)
+      bpy.context.collection.children.link(col)
 
     return {"FINISHED"}
 
@@ -243,7 +252,7 @@ class DabuPanel(bpy.types.Panel):
     col.operator("scene.add_tag_to_objects", icon="OBJECT_DATA", text="Add Object Tag")
     col.operator("scene.add_tag_to_collections", icon="OUTLINER_COLLECTION", text="Add Collection Tag")
     col = layout.column(align=True)
-    col.operator("scene.name_collection_like_file")
-
-
+    col.operator("scene.name_collection_like_file", icon="FILE_TEXT")
+    col.operator("scene.move_objects_collection", icon="OUTLINER")
+    col.operator("scene.park_objects", icon="LIGHTPROBE_GRID")
 # convert_collections_to_asset_catalog(bpy.context.scene.collection)
