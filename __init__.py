@@ -1,8 +1,6 @@
 import bpy
-from dreisicht_asset_browser_utilities import core
-from dreisicht_asset_browser_utilities.core import ConvertCollectionsToCatalogs, AddTagToObjects, AddTagToCollections, DabuPanel, NameCollectionLikeFile, ParkObjects, MoveObjectsCollection
+from dreisicht_asset_browser_utilities import main
 import importlib
-import sys
 
 bl_info = {
     "name": "dreisicht Asset Browser Utilities ",
@@ -15,15 +13,18 @@ bl_info = {
     "category": "Import-Export",
 }
 
-to_register_classes = [ConvertCollectionsToCatalogs,
-                       AddTagToObjects,
-                       AddTagToCollections,
-                       DabuPanel, NameCollectionLikeFile, ParkObjects,
-                       MoveObjectsCollection]
+to_register_classes = [main.ConvertCollectionsToCatalogs,
+                       main.AddTagToObjects,
+                       main.AddTagToCollections,
+                       main.DabuPanel,
+                       main.NameCollectionLikeFile,
+                       main.GridObject,
+                       main.MoveObjectsCollection,
+                       main.SortSelectedObjectsToCollections]
 
 
 def register():
-  importlib.reload(core)
+  importlib.reload(main)
   for cls in to_register_classes:
     bpy.utils.register_class(cls)
 
