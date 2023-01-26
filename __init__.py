@@ -1,6 +1,8 @@
+"""Base file for the addon."""
+
+import importlib
 import bpy
 from dreisicht_asset_browser_utilities import main
-import importlib
 
 bl_info = {
     "name": "dreisicht Asset Browser Utilities ",
@@ -20,7 +22,8 @@ to_register_classes = [main.ConvertCollectionsToCatalogs,
                        main.NameCollectionLikeFile,
                        main.GridObject,
                        main.MoveObjectsCollection,
-                       main.SortSelectedObjectsToCollections]
+                       main.SortSelectedObjectsToCollections,
+                       main.CollectionizeObject]
 
 
 def register():

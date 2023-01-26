@@ -98,3 +98,19 @@ def convert_collections_to_asset_catalog(parent_collection):
       continue
     add_assets_to_catalog(child_collection, get_collection_path_absolute(child_collection))
     convert_collections_to_asset_catalog(child_collection)
+
+
+def unlink_object_from_all_collections(bpy_object):
+  for col in bpy_object.users_collection:
+    col.objects.unlink(bpy_object)
+
+
+def collectionize_root_empty(bpy_object):
+  parent_col = bpy_object.users_collection[0]
+  new_col = bpy.data.collections.new(name=bpy_object.name)
+  parent_col.children.link(new_col)
+  unlink_object_from_all_collections(bpy_object)
+  new_col.objects.link(bpy_object)
+  for obj in bpy_object.children_recursive:
+    unlink_object_from_all_collections(obj)
+    new_col.objects.link(obj)

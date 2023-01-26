@@ -12,6 +12,10 @@ class ConvertCollectionsToCatalogs(bpy.types.Operator):
   bl_label = "Convert Collections to Asset Catalogs"
   bl_options = {'REGISTER', 'UNDO'}
 
+  @classmethod
+  def poll(cls, context):
+    return context.collection is not None and context.collection is not context.scene.collection
+
   def execute(self, context):
     catalog_utils.convert_collections_to_asset_catalog(context.scene.collection)
     return {'FINISHED'}
@@ -27,7 +31,12 @@ class AddTagToObjects(bpy.types.Operator):
 
   @classmethod
   def poll(cls, context):
-    return context.active_object is not None
+    if context.active_object is not None and context.selected_objects != []:
+      return False
+    for ob in context.selected_objects:
+      if not ob.asset_data:
+        return False
+    return True
 
   def invoke(self, context, event):
     return context.window_manager.invoke_props_dialog(self)
@@ -47,7 +56,7 @@ class AddTagToCollections(bpy.types.Operator):
 
   @classmethod
   def poll(cls, context):
-    return context.active_object is not None
+    return context.collection is not None and context.collection is not context.scene.collection
 
   def invoke(self, context, event):
     return context.window_manager.invoke_props_dialog(self)
@@ -68,7 +77,7 @@ class AddTagToCollections(bpy.types.Operator):
 
 
 class GridObject(bpy.types.Operator):
-  bl_idname = "scene.park_objects"
+  bl_idname = "scene.gridify_objects"
   bl_description = "Aligns all objects to a grid"
   bl_label = "Aligns the objects to a grid"
   bl_options = {'REGISTER', 'UNDO'}
@@ -78,7 +87,7 @@ class GridObject(bpy.types.Operator):
 
   @classmethod
   def poll(cls, context):
-    return context.active_object is not None
+    return context.active_object is not None and context.selected_objects != []
 
   def execute(self, context):
     y_size = catalog_utils.get_parking_lot_size(len(context.selected_objects))
@@ -99,7 +108,7 @@ class GridObject(bpy.types.Operator):
 
 
 class MoveObjectsCollection(bpy.types.Operator):
-  bl_idname = "scene.move_objects_collection"
+  bl_idname = "scene.subordinate_objects_collection"
   bl_description = "Moves all collections that contain the selected objects to the active collection"
   bl_label = "Move Objects' Collection"
   bl_options = {"REGISTER", "UNDO"}
@@ -130,7 +139,7 @@ class NameCollectionLikeFile(bpy.types.Operator):
 
   @classmethod
   def poll(cls, context):
-    return context.collection is not None
+    return context.collection is not None and context.collection is not context.scene.collection
 
   def execute(self, context):
     context.collection.name = os.path.splitext(os.path.basename(bpy.data.filepath))[0]
@@ -138,9 +147,26 @@ class NameCollectionLikeFile(bpy.types.Operator):
 
 
 class SortSelectedObjectsToCollections(bpy.types.Operator):
-  bl_idname = "scene.sort_objects_to_collections"
+  bl_idname = "scene.contacting_objects_to_collections"
   bl_label = "Contacting Objects to Collections"
   bl_description = "Gets all objects in contact from the selected objects and sorts them into collections. Name of the collection is determined from the first object. The bounding box is being used for contact determination and might not be always precise"
+  bl_options = {"REGISTER", "UNDO"}
+
+  @classmethod
+  def poll(cls, context):
+    return context.active_object is not None and context.selected_objects != []
+
+  def execute(self, context):
+    original_intersects = get_intersecting_bounding_boxes.get_all_intersects(bpy.context.selected_objects)
+    for group in get_intersecting_bounding_boxes.get_node_groups(original_intersects):
+      get_intersecting_bounding_boxes.move_list_of_objects_to_collection(group)
+    return {"FINISHED"}
+
+
+class CollectionizeObject(bpy.types.Operator):
+  bl_idname = "scene.collectionize_object"
+  bl_label = "Collectionize Objects"
+  bl_description = "Moves the empty and the children of the empty into a newly created collection"
   bl_options = {"REGISTER", "UNDO"}
 
   @classmethod
@@ -148,9 +174,10 @@ class SortSelectedObjectsToCollections(bpy.types.Operator):
     return context.selected_objects is not None
 
   def execute(self, context):
-    original_intersects = get_intersecting_bounding_boxes.get_all_intersects(bpy.context.selected_objects)
-    for group in get_intersecting_bounding_boxes.get_node_groups(original_intersects):
-      get_intersecting_bounding_boxes.move_list_of_objects_to_collection(group)
+    for obj in context.selected_objects:
+      if obj.parent:
+        continue
+      catalog_utils.collectionize_root_empty(obj)
     return {"FINISHED"}
 
 
@@ -167,12 +194,22 @@ class DabuPanel(bpy.types.Panel):
 
   def draw(self, context):
     layout = self.layout
-    layout.operator("scene.convert_collections_to_catalogs", icon="CURRENT_FILE", text="Collections to Catalog")
     col = layout.column(align=True)
+    col.label(text="Tags")
     col.operator("scene.add_tag_to_objects", icon="OBJECT_DATA", text="Add Object Tag")
     col.operator("scene.add_tag_to_collections", icon="OUTLINER_COLLECTION", text="Add Collection Tag")
+
     col = layout.column(align=True)
+    col.label(text="Change objects")
+    col.operator("scene.gridify_objects", icon="LIGHTPROBE_GRID")
+
+    col = layout.column(align=True)
+    col.label(text="Create collections")
+    col.operator("scene.contacting_objects_to_collections", icon="PIVOT_BOUNDBOX")
+    col.operator("scene.collectionize_object", icon="GROUP")
+
+    col = layout.column(align=True)
+    col.label(text="Edit collections")
+    col.operator("scene.subordinate_objects_collection", icon="OUTLINER")
     col.operator("scene.name_collection_like_file", icon="FILE_TEXT")
-    col.operator("scene.move_objects_collection", icon="OUTLINER")
-    col.operator("scene.park_objects", icon="LIGHTPROBE_GRID")
-    col.operator("scene.sort_objects_to_collections", icon="PIVOT_BOUNDBOX")
+    col.operator("scene.convert_collections_to_catalogs", icon="CURRENT_FILE", text="Collections to Catalog")
