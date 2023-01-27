@@ -90,7 +90,7 @@ class GridObject(bpy.types.Operator):
     return context.active_object is not None and context.selected_objects != []
 
   def execute(self, context):
-    y_size = catalog_utils.get_parking_lot_size(len(context.selected_objects))
+    y_size = catalog_utils.get_parking_lot_size(len(context.selected_objects), (self.y_size / self.x_size))
     counter = 0
     for bpy_object in context.selected_objects:
       # Safety checks

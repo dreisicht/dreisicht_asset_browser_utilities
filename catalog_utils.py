@@ -6,10 +6,10 @@ except ImportError:
   print("The asset browser utilities from https://github.com/Gorgious56/asset_browser_utilities/ need to be installed.")
 
 
-def get_parking_lot_size(n_cars):
+def get_parking_lot_size(n_cars, ratio):
   counter = 1
   while True:
-    if (counter * counter * 4) > n_cars:
+    if (counter * counter * ratio) > n_cars:
       return counter
     counter += 1
 
