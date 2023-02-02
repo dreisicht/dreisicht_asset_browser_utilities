@@ -6,6 +6,21 @@ except ImportError:
   print("The asset browser utilities from https://github.com/Gorgious56/asset_browser_utilities/ need to be installed.")
 
 
+def get_all_descendants(root):
+  for child in root.children:
+    yield child
+    yield from get_all_descendants(child)
+
+
+def exclude_collection(bpy_collection, context):
+  for lc in get_all_descendants(context.view_layer.layer_collection):
+    if bpy_collection == lc.collection:
+      lc.exclude = True
+      break
+  else:
+    raise ValueError
+
+
 def create_collection_instance(bpy_collection, context):
   collection_instance = bpy.data.objects.new(name=bpy_collection.name, object_data=None)
   context.scene.collection.objects.link(collection_instance)

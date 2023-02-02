@@ -229,10 +229,12 @@ class ConvertCollectionsToInstances(bpy.types.Operator):
         root_objects.append(ob)
       if len(root_objects) > 1:
         raise NotImplementedError("There are more than one roots in the collection, which is not supported.")
+      # if not root_objects:
       original_location = deepcopy(root_objects[0].location)
       root_objects[0].location = mathutils.Vector((0, 0, 0))
       collection_instance = catalog_utils.create_collection_instance(col, context)
       collection_instance.location = original_location
+      catalog_utils.exclude_collection(col, context)
     return {"FINISHED"}
 
 
