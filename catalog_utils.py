@@ -6,6 +6,15 @@ except ImportError:
   print("The asset browser utilities from https://github.com/Gorgious56/asset_browser_utilities/ need to be installed.")
 
 
+def create_collection_instance(bpy_collection, context):
+  collection_instance = bpy.data.objects.new(name=bpy_collection.name, object_data=None)
+  context.scene.collection.objects.link(collection_instance)
+  collection_instance.instance_type = 'COLLECTION'
+  collection_instance.instance_collection = bpy_collection
+  collection_instance.empty_display_size = 0.1
+  return collection_instance
+
+
 def get_parking_lot_size(n_cars, ratio):
   counter = 1
   while True:

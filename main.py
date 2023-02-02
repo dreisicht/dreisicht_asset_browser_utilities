@@ -1,6 +1,7 @@
 import bpy
 import mathutils
 import os
+from copy import deepcopy
 
 from dreisicht_asset_browser_utilities import catalog_utils
 from dreisicht_asset_browser_utilities import get_intersecting_bounding_boxes
@@ -181,6 +182,60 @@ class CollectionizeObject(bpy.types.Operator):
     return {"FINISHED"}
 
 
+class GroupByName(bpy.types.Operator):
+  bl_idname = "scene.group_by_name"
+  bl_label = "Group by Name"
+  bl_description = "Groups all objects in the scene by names"
+  bl_options = {"REGISTER", "UNDO"}
+
+  group_identifier: bpy.props.StringProperty(name="Group Identifier")
+
+  def execute(self, context):
+    for obj in bpy.data.objects:
+      if not "group_name" in obj.name:
+        continue
+      group_name = obj.name[:-3]
+      group_collection = bpy.data.collections.get(group_name)
+      if not group_collection:
+        group_collection = bpy.data.collections.new(name=group_name)
+      group_collection.objects.link(obj)
+    return {"FINISHED"}
+
+
+class AutoMarkCollectionsAsAssets(bpy.types.Operator):
+  bl_idname = "scene.mark_collections_as_assets"
+  bl_label = "Auto mark collections as assets"
+  bl_description = "Marks all collections as assets, that don't have child assets"
+  bl_options = {"REGISTER", "UNDO"}
+
+  def execute(self, context):
+    return {"FINISHED"}
+
+
+class ConvertCollectionsToInstances(bpy.types.Operator):
+  bl_idname = "scene.convert_collections_to_instances"
+  bl_label = "Convert Collections ot Instances"
+  bl_description = "Replaces the objects in the scene with correctly placed collection instances. "
+  bl_options = {"REGISTER", "UNDO"}
+
+  def execute(self, context):
+    for col in bpy.data.collections:
+      if not col.asset_data:
+        continue
+      root_objects = []
+      for ob in col.objects:
+        if ob.parent:
+          continue
+        root_objects.append(ob)
+      if len(root_objects) > 1:
+        raise NotImplementedError("There are more than one roots in the collection, which is not supported.")
+      original_location = deepcopy(root_objects[0].location)
+      root_objects[0].location = mathutils.Vector((0, 0, 0))
+      collection_instance = catalog_utils.create_collection_instance(col, context)
+      collection_instance.location = original_location
+    return {"FINISHED"}
+
+
 class DabuPanel(bpy.types.Panel):
   bl_idname = "SCENE_PT_dabu"
   bl_label = "DABU"
@@ -207,9 +262,13 @@ class DabuPanel(bpy.types.Panel):
     col.label(text="Create collections")
     col.operator("scene.contacting_objects_to_collections", icon="PIVOT_BOUNDBOX")
     col.operator("scene.collectionize_object", icon="GROUP")
+    col.operator("scene.group_by_name", icon="FILE_FONT")
 
     col = layout.column(align=True)
     col.label(text="Edit collections")
     col.operator("scene.subordinate_objects_collection", icon="OUTLINER")
     col.operator("scene.name_collection_like_file", icon="FILE_TEXT")
     col.operator("scene.convert_collections_to_catalogs", icon="CURRENT_FILE", text="Collections to Catalog")
+    col.operator("scene.mark_collections_as_assets", icon="ASSET_MANAGER")
+    col.operator("scene.convert_collections_to_instances",
+                 icon="OUTLINER_OB_GROUP_INSTANCE", text="Collections to Instances")

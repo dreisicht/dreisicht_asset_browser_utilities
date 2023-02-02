@@ -3,6 +3,7 @@
 import importlib
 import bpy
 from dreisicht_asset_browser_utilities import main
+from dreisicht_asset_browser_utilities import catalog_utils
 
 bl_info = {
     "name": "dreisicht Asset Browser Utilities ",
@@ -23,11 +24,15 @@ to_register_classes = [main.ConvertCollectionsToCatalogs,
                        main.GridObject,
                        main.MoveObjectsCollection,
                        main.SortSelectedObjectsToCollections,
-                       main.CollectionizeObject]
+                       main.CollectionizeObject,
+                       main.GroupByName,
+                       main.AutoMarkCollectionsAsAssets,
+                       main.ConvertCollectionsToInstances]
 
 
 def register():
   importlib.reload(main)
+  importlib.reload(catalog_utils)
   for cls in to_register_classes:
     bpy.utils.register_class(cls)
 
