@@ -158,6 +158,9 @@ class SortSelectedObjectsToCollections(bpy.types.Operator):
     return context.active_object is not None and context.selected_objects != []
 
   def execute(self, context):
+    if len(context.selected_objects) == 1:
+      get_intersecting_bounding_boxes.move_list_of_objects_to_collection(context.selected_objects)
+      return {"FINISHED"}
     original_intersects = get_intersecting_bounding_boxes.get_all_intersects(bpy.context.selected_objects)
     for group in get_intersecting_bounding_boxes.get_node_groups(original_intersects):
       get_intersecting_bounding_boxes.move_list_of_objects_to_collection(group)
@@ -229,7 +232,6 @@ class ConvertCollectionsToInstances(bpy.types.Operator):
         root_objects.append(ob)
       if len(root_objects) > 1:
         raise NotImplementedError("There are more than one roots in the collection, which is not supported.")
-      # if not root_objects:
       original_location = deepcopy(root_objects[0].location)
       root_objects[0].location = mathutils.Vector((0, 0, 0))
       collection_instance = catalog_utils.create_collection_instance(col, context)
