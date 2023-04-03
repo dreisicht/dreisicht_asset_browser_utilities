@@ -1,4 +1,5 @@
 import bpy
+import os
 
 try:
   from asset_browser_utilities.module.catalog.tool import CatalogsHelper
@@ -102,7 +103,9 @@ def mark_data_with_tag(bpy_obj_or_col_list, tag):
 def add_assets_to_catalog(bpy_collection, catalog_name):
   cat_helper = CatalogsHelper()
   # The function ensure_or_create_catalog_definition takes as input a string for the name of the asset catalog.
-  catalog_uuid = cat_helper.ensure_or_create_catalog_definition(catalog_name)
+  extended_catalog_name = "gscatter/" + \
+      os.path.normpath(bpy.data.filepath).split("\\")[9].split("_")[0] + "/" + catalog_name
+  catalog_uuid = cat_helper.ensure_or_create_catalog_definition(extended_catalog_name)
   # Add all objects marked as asset of the collection to the asset catalog
   for obj in bpy_collection.objects:
     if obj.asset_data:
